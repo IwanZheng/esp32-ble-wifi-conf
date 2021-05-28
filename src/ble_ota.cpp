@@ -31,6 +31,7 @@ String pwSec;
 bool hasCredentials;
 bool connStatusChanged;
 bool isConnected;
+bool commandReceived;
 /** Unique device name */
 char apName[] = "ESP32-xxxxxxxxxxxx";
 /** Selected network
@@ -54,6 +55,8 @@ StaticJsonDocument<256> jsonBuffer;
 BLECharacteristic *pCharacteristicWiFi;
 /** Characteristic for IP Notification */
 BLECharacteristic *pCharacteristicIP;
+/** Characteristic for command */
+BLECharacteristic *pCharacteristicCommand;
 /** BLE Advertiser */
 BLEAdvertising *pAdvertising;
 /** BLE Service */
@@ -64,11 +67,11 @@ BLEService *pService2;
 BLEServer *pServer;
 
 // List of Service and Characteristic UUIDs
-#define SERVICE_UUID "b43f9052-aeab-11eb-8529-0242ac130003"
-#define WIFI_UUID "b43f930e-aeab-11eb-8529-0242ac130003"
-#define IPSERVICE_UUID "b43f9412-aeab-11eb-8529-0242ac130003"
-#define IP_UUID "b43f94da-aeab-11eb-8529-0242ac130003"
-
+#define SERVICE_UUID "0124b940-bfe3-11eb-8529-0242ac130003"
+#define WIFI_UUID "0124bb8e-bfe3-11eb-8529-0242ac130003"
+#define IP_UUID "0124bc7e-bfe3-11eb-8529-0242ac130003"
+#define COMMAND_UUID "0124bd3c-bfe3-11eb-8529-0242ac130003"
+#define COMMAND_NOTIFY_UUID "0124c03e-bfe3-11eb-8529-0242ac130003"
 using namespace std;
 
 void createName()
@@ -120,7 +123,9 @@ class MyServerCallbacks : public BLEServerCallbacks
     {
       deviceConnected = true;
       Serial.println("BLE client connected");
-	  
+	  Serial.println("\n");
+	  Serial.println("Ready to receive command ...");
+	  Serial.println("\n");
     };
 
     void onDisconnect(BLEServer * pServer)
@@ -131,10 +136,35 @@ class MyServerCallbacks : public BLEServerCallbacks
     }
 };
 
+bool isCommandReceived()
+{
+	return commandReceived;
+}
+
 bool BLEConnected()
 {
 	return deviceConnected;
 }
+/**
+   CommandCallbackHandler
+   Callbacks for BLE client command requests
+*/
+
+class CommandCallbackHandler : public BLECharacteristicCallbacks
+{
+	 void onWrite(BLECharacteristic *pCharacteristicCommand)
+    {
+      std::string value = pCharacteristicCommand->getValue();
+      if (value.length() == 0)
+      {
+        return;
+      }
+	  commandReceived = true;
+//	  Serial.println("Received command over BLE: " + String((char *)&value[0]));
+	}
+	
+};
+
 /**
    MyCallbackHandler
    Callbacks for BLE client read/write requests
@@ -149,7 +179,7 @@ class MyCallbackHandler : public BLECharacteristicCallbacks
       {
         return;
       }
-      Serial.println("Received over BLE: " + String((char *)&value[0]));
+  //    Serial.println("Received over BLE: " + String((char *)&value[0]));
 
       // Decode data
       // int keyIndex = 0;
@@ -226,7 +256,7 @@ class MyCallbackHandler : public BLECharacteristicCallbacks
 
     void onRead(BLECharacteristic *pCharacteristic)
     {
-      Serial.println("BLE onRead request");
+      // Serial.println("BLE onRead request");
       String wifiCredentials;
 
       /** Json object for outgoing data */
@@ -255,8 +285,6 @@ class MyCallbackHandler : public BLECharacteristicCallbacks
     }
 };
 
-
-
 void initBLE() {
   // Initialize BLE and set output power
   BLEDevice::init(apName);
@@ -271,7 +299,7 @@ void initBLE() {
   // Create BLE Service
 
   pService = pServer->createService(SERVICE_UUID);
-
+  
   // Create BLE Characteristic for WiFi settings
   pCharacteristicWiFi = pService->createCharacteristic(
                           WIFI_UUID,
@@ -289,12 +317,30 @@ void initBLE() {
                         BLECharacteristic::PROPERTY_NOTIFY |
                         BLECharacteristic::PROPERTY_INDICATE
                       );
-
-  // Add desctiptor to characteristic
-  pCharacteristicIP->addDescriptor(new BLE2902());
+  /// Add desctiptor to characteristic
+ pCharacteristicIP->addDescriptor(new BLE2902());			
+			
+pService2 = pServer->createService(COMMAND_UUID);
+			
+  // Create BLE Characteristic for WiFi settings
+  pCharacteristicCommand = pService2->createCharacteristic(
+                        COMMAND_NOTIFY_UUID,
+                        BLECharacteristic::PROPERTY_WRITE |
+                        BLECharacteristic::PROPERTY_NOTIFY |
+                        BLECharacteristic::PROPERTY_INDICATE
+   );
+   
+  pCharacteristicCommand->setCallbacks(new CommandCallbackHandler());
+  /// Add desctiptor to characteristic
+   pCharacteristicCommand->addDescriptor(new BLE2902());
+ 
+ 
 
   // Start the service
   pService->start();
+  
+  // Start the service
+  pService2->start();
   
   // Start advertising
   pAdvertising = pServer->getAdvertising();
@@ -324,12 +370,21 @@ bool isConnect() {
 }
 
 void notifyIP(std::string addressIP) {
- 
-	Serial.println("Notify IP address");
+	
 	pCharacteristicIP -> setValue(addressIP);
     pCharacteristicIP -> notify();
 	// pCharacteristicIP -> indicate();
-  
+}
+
+std::string getCommand() {
+	std::string value = pCharacteristicCommand -> getValue();
+	return value;
+}
+
+void notifyOK(char* value) {
+	pCharacteristicCommand -> setValue(value);
+    pCharacteristicCommand -> notify();
+	commandReceived = false;
 }
 
 /** Callback for connection loss */
