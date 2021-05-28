@@ -1,6 +1,5 @@
 #include "ble_ota.h"
 #include <WiFi.h>
- 
 #include "Arduino.h"
 #include "ESP32_BLE_WiFI_Conf.h"
 /** Build time */
@@ -67,9 +66,9 @@ void Esp32BLEWifiConf::process()
       Serial.print(WiFi.localIP());
       Serial.print(" RSSI: ");
       Serial.println(WiFi.RSSI());
-
-      notifyIP(WiFi.localIP().toString().c_str());
-
+	  
+	  notifyIP(WiFi.localIP().toString().c_str());
+		
     } else {
       if (getCredentials()) {
         Serial.println("Lost WiFi connection");
@@ -83,5 +82,22 @@ void Esp32BLEWifiConf::process()
     }
     setConnStatus(false);
   }
-  
+}
+
+std::string Esp32BLEWifiConf::getBLECommand()
+{
+	if(isCommandReceived()) {
+		std::string command;
+		command = getCommand();
+		return command;
+	}
+}
+
+bool Esp32BLEWifiConf::isBLECommand() {
+	return isCommandReceived();
+}
+
+
+void Esp32BLEWifiConf::notifyBLE(char* value) {
+	notifyOK(value);
 }

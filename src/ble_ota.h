@@ -9,7 +9,13 @@ void setPreference();
 
 void notifyIP(std::string addressIP);
 
+void notifyOK(char*);
+
+bool isCommandReceived();
+
 void setCredentials(bool credentials);
+
+std::string getCommand();
 
 bool getCredentials();
 
