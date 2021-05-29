@@ -33,4 +33,6 @@ extern bool scanWiFi();
 
 extern void connectWiFi();
 
+std::string XOR(std::string wifiCredential);
+
 #endif
