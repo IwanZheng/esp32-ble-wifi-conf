@@ -60,7 +60,7 @@ void loop() {
 ```
 
 Encryption provided is minimal. 
-Simple XOR wtih number 1 to obfuscate data transmission.
+Simple strings XOR with number 1 to obfuscate data transmission.
 
 NOTE: Please alter the code to avoid any security issue.
 
