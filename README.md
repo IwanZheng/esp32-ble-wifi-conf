@@ -13,8 +13,9 @@ This code itself is very simple and uses simple XOR encryption to transmit and r
 
 
 Usage example:
-Simplest way to use this code
+Simplest way to use this code.
 
+```cpp
 #include "src/ESP32_BLE_WiFi_Conf.h";
 
 //global variable
@@ -28,12 +29,18 @@ void setup()
 void loop() {
   bleconf.process();
 }
-
+```
 
 Other example:
 
 We are getting command from BLE;
 and acknowledge by sending a string back.
+
+```cpp
+#include "src/ESP32_BLE_WiFi_Conf.h";
+
+//global variable
+Esp32BLEWifiConf bleconf;
 
 void setup()
 {
@@ -50,15 +57,16 @@ void loop() {
      bleconf.notifyBLE("OK");
   }
 }
+```
 
 Encryption provided is minimal. 
 Simple XOR wtih number 1 to obfuscate data transmission.
 
 NOTE: Please alter the code to avoid any security issue.
 
+```cpp
 std::string XOR(std::string wifiCredential)
 {
-   
     // encode the data
     int keyIndex = 1;
     std::string encodedCredential;
@@ -70,8 +78,9 @@ std::string XOR(std::string wifiCredential)
 
     return encodedCredential;
 };
+```
 
-Privide yourself a decoding algorithm on your software.
+Provide yourself a decoding algorithm on your software.
 
 Some rudimentary software is provided at https://esp32pwa.web.app to check for features.
 
